@@ -4,10 +4,12 @@ import googleapiclient.discovery
 import typing
 from period import Period
 from datetime import datetime
+import google.oauth2.credentials
+import google_auth_oauthlib.flow
+from flask import Flask, redirect, session, url_for, request
+import typing, asyncio
 
-api = schoolsoft_api.Api("wier", "Henrik11", "fredsborgskolan")
-
-def getPeriods():
+def getPeriods(api: schoolsoft_api.Api):
     lessons = api.lessons
     for lesson in lessons:
         weekraw = lesson["weeksString"].split(", ")
@@ -33,12 +35,6 @@ def addPeriodsToCalendar(periods: typing.Iterable[Period]):
         calendar = service.calendars().get(calendarId='primary').execute()
         print(calendar['summary'])
 
-for p in getPeriods(): print(p)
-
-import google.oauth2.credentials
-import google_auth_oauthlib.flow
-from flask import Flask, redirect, session, url_for, request
-import typing, asyncio
 
 
 
@@ -58,7 +54,7 @@ flask = Flask("GoogleAuth")
 
 @flask.route("/")
 def index():
-  return """
+  return f"""
     <!DOCTYPE html>
     <html>
       <head>
@@ -66,13 +62,28 @@ def index():
         <title>Schoolsoft-Cal Linker</title>
       </head>
       <body>
-        <header
+        <h2>Copy classes to Calendar</h2>
+        {f'''
+        <a href="{generateAuthURL()[0]}">Log in with Google</a>
+        ''' if "credentials" not in session else f'''
+        <form method="post" action="/login">
+          <p>Logged in as <b></b></p>
+          <p>SchoolSoft User: <input type=text name="ssUsr" required/></p>
+          <p>SchoolSoft Password: <input type=passwd name="ssPwd" required/></p>
+          <p>School ID: <input type=text name="ssSchool" required/></p>
+          <p>Name of calendar: <input type=text name="gCal" required/></p>
+          <input type=submit value="Copy to Calendar"/>
+        </form>
+       '''}
+      </body>
+    </html>
   """
 
+
+
 states = {}
-@flask.route("/callback", methods=["GET", "POST"])
+@flask.route("/callback", methods=["POST"])
 def authendpoint():
-  #if request.method == "GET": 
   state = session['state']
   flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
     'client_secret.json',
