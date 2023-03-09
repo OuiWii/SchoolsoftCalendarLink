@@ -58,16 +58,27 @@ flask = Flask("GoogleAuth")
 
 @flask.route("/")
 def index():
-  with open("html/index.html") as f: return f.read()
+  return """
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Schoolsoft-Cal Linker</title>
+      </head>
+      <body>
+        <header
+  """
 
+states = {}
 @flask.route("/callback", methods=["GET", "POST"])
 def authendpoint():
+  #if request.method == "GET": 
   state = session['state']
   flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
     'client_secret.json',
     scopes=self._scopes,
     state=state)
-  flow.redirect_uri = url_for('oauth2callback', _external=True)
+  flow.redirect_uri = url_for('/callback', _external=True)
 
   authorization_response = request.url
   flow.fetch_token(authorization_response=authorization_response)
