@@ -131,3 +131,7 @@ dmypy.json
 # Credentials
 client_secret*.json
 flask_session/
+
+*replit*
+*.lock
+*.toml

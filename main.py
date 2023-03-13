@@ -6,9 +6,8 @@ from period import Period
 from datetime import datetime
 from google.oauth2.credentials import Credentials
 import google_auth_oauthlib.flow
-from flask import Flask, redirect, session, url_for, request, make_response
+from flask import Flask, redirect, session, url_for, request
 import flask_session
-import typing
 
 def getPeriods(api: schoolsoft_api.Api):
     lessons = api.lessons
@@ -58,7 +57,7 @@ flask = Flask(__name__)
 
 @flask.route("/")
 def index():
-  username = ""
+  username:str = ""
   try:
     if "credentials" in session:
       with googleapiclient.discovery.build("oauth2", "v2", credentials=Credentials(**session["credentials"])) as uiendp:
@@ -77,8 +76,8 @@ def index():
         <h2>Copy classes to Calendar</h2>
         {f'''
         <a href="{generateAuthURL()[0]}">Log in with Google</a>
-        ''' if ("credentials" not in session) or not username else f'''
-        <form method="post" action="/login">
+        ''' if (not username) or 'credentials' not in session else f'''
+        <form method="post" action="{url_for("execute")}">
           <p>Logged in as <b>{username}</b></p>
           <p>SchoolSoft User: <input type=text name="ssUsr" required/></p>
           <p>SchoolSoft Password: <input type=passwd name="ssPwd" required/></p>
@@ -91,7 +90,10 @@ def index():
     </html>
   """
 
-
+@flask.route("/execute", methods=["POST"])
+def execute():
+    with googleapiclient.discovery.build("calendar", "v3", credentials=Credentials(**session["credentials"])) as cal:
+        return "calendar success"
 
 states = {}
 @flask.route("/callback", methods=["GET","POST"])
@@ -123,14 +125,10 @@ import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 url = "https://bbb5-84-218-4-74.eu.ngrok.io"
-
-SESSION_TYPE = "redis"
-PERMANENT_SESSION_LIFETIME = 1800
-
 flask.secret_key = os.urandom(24)
 flask.config['SESSION_TYPE'] = 'filesystem'
 flask_session.Session(flask)
-flask.run("localhost", 80, True)
+flask.run("0.0.0.0", 8080, True)
     
 
   
